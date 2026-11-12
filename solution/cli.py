@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .config import load_dispositions
 from .database import connect_database, initialize_database
+from .pipeline import ingest_drop
 from .pii import PiiProtector
 from .reports import generate_reports
 
@@ -29,6 +30,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("assignment-a-data/schemas/dispositions.csv"),
     )
+    ingest_parser = subparsers.add_parser(
+        "ingest",
+        help="ingest one data drop",
+    )
+    ingest_parser.add_argument("--db", required=True, type=Path)
+    ingest_parser.add_argument("--drop", required=True, type=Path)
+    ingest_parser.add_argument(
+        "--schemas",
+        type=Path,
+        default=Path("assignment-a-data/schemas"),
+    )
+    ingest_parser.add_argument(
+        "--dispositions",
+        type=Path,
+        default=Path("assignment-a-data/schemas/dispositions.csv"),
+    )
     return parser
 
 
@@ -43,6 +60,18 @@ def main() -> None:
                 connection,
                 args.out,
                 load_dispositions(args.dispositions),
+                PiiProtector.from_environment(),
+            )
+        finally:
+            connection.close()
+    elif args.command == "ingest":
+        connection = connect_database(args.db)
+        try:
+            ingest_drop(
+                connection,
+                args.drop,
+                args.schemas,
+                args.dispositions,
                 PiiProtector.from_environment(),
             )
         finally:
