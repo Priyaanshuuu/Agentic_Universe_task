@@ -1,9 +1,30 @@
 # Assignment A solution
 
-This solution will ingest the supplied lead CSV and event JSONL files into SQLite,
-then generate the five required reports from the database.
+This solution ingests lead CSV and event JSONL drops into SQLite, then generates
+the five required reports from the database.
 
-## Planned module boundaries
+## Run
+
+From the repository root:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+
+$env:AU_PII_KEY = "local-development-key"
+python assignment-a-data\tools\generate_data.py --seed 42 --scale small --out data
+python -m solution init-db --db assignment_a.sqlite
+python -m solution ingest --db assignment_a.sqlite --drop data\drop_1
+python -m solution ingest --db assignment_a.sqlite --drop data\drop_2
+python -m solution report --db assignment_a.sqlite --out reports
+python -m pytest -q
+```
+
+`AU_PII_KEY` is required for `ingest` and `report`. Use a secret value outside
+local development and never commit it.
+
+## Module boundaries
 
 - `cli.py`: command-line entry point (`init-db`, `ingest`, and `report`).
 - `config.py`: load workflow schemas and the disposition catalogue.
@@ -14,8 +35,8 @@ then generate the five required reports from the database.
 - `rules.py`: effective dispositions, lead buckets, and report facts.
 - `reports.py`: exact CSV and JSON output generation.
 
-The modules will remain small and depend on lower-level modules only. Parsing and
-business rules will be testable without a database or generated data.
+The modules remain small and depend on lower-level modules only. Parsing and
+business rules are testable without generated data.
 
 ## Database design
 
@@ -33,3 +54,7 @@ be displayed or processed. Plaintext PII will not be stored.
 
 Workflow-specific optional lead fields will be stored as normalized JSON in
 `leads.attributes_json`; report-critical identity fields remain separate columns.
+
+Events that cannot currently be linked are retained with `link_status = 'orphan'`.
+When a later lead upload arrives, the orphan is relinked by its workflow and
+phone hash, or by `call_id` for overrides.
