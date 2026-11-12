@@ -1,0 +1,1 @@
+"""Assignment A data pipeline."""
