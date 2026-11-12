@@ -1,9 +1,9 @@
 # Submission
 
 ## Candidate
-- **Name:** _Fill in before submission_
+- **Name:** Priyanshu Sinha
 - **Assignment chosen:** A (Data)
-- **Time spent (honest estimate):** _Fill in before submission_
+- **Time spent (honest estimate):** 2-2.5 hrs
 
 ## How to run
 ```powershell
