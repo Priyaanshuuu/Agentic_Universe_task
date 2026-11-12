@@ -3,7 +3,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .database import initialize_database
+from .config import load_dispositions
+from .database import connect_database, initialize_database
+from .pii import PiiProtector
+from .reports import generate_reports
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -15,6 +18,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="create the SQLite database tables",
     )
     init_parser.add_argument("--db", required=True, type=Path)
+    report_parser = subparsers.add_parser(
+        "report",
+        help="write the five report files",
+    )
+    report_parser.add_argument("--db", required=True, type=Path)
+    report_parser.add_argument("--out", required=True, type=Path)
+    report_parser.add_argument(
+        "--dispositions",
+        type=Path,
+        default=Path("assignment-a-data/schemas/dispositions.csv"),
+    )
     return parser
 
 
@@ -22,6 +36,17 @@ def main() -> None:
     args = build_parser().parse_args()
     if args.command == "init-db":
         initialize_database(args.db)
+    elif args.command == "report":
+        connection = connect_database(args.db)
+        try:
+            generate_reports(
+                connection,
+                args.out,
+                load_dispositions(args.dispositions),
+                PiiProtector.from_environment(),
+            )
+        finally:
+            connection.close()
 
 
 if __name__ == "__main__":
