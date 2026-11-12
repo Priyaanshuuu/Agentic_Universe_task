@@ -250,4 +250,7 @@ def ingest_lead_file(
             """,
             (name, value),
         )
+    from .events import relink_orphans
+
+    relink_orphans(connection)
     return stats

@@ -38,6 +38,13 @@ class WorkflowSchema:
         return result
 
 
+@dataclass(frozen=True)
+class DispositionSpec:
+    code: str
+    is_terminal: bool
+    is_success: bool
+
+
 def load_workflow_schema(path: str | Path) -> WorkflowSchema:
     document = json.loads(Path(path).read_text(encoding="utf-8"))
     fields = tuple(
@@ -54,3 +61,18 @@ def load_workflow_schema(path: str | Path) -> WorkflowSchema:
         for field in document["fields"]
     )
     return WorkflowSchema(workflow_id=document["workflow_id"], fields=fields)
+
+
+def load_dispositions(path: str | Path) -> dict[str, dict[str, DispositionSpec]]:
+    import csv
+
+    result: dict[str, dict[str, DispositionSpec]] = {}
+    with Path(path).open("r", encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
+            disposition = DispositionSpec(
+                code=row["code"],
+                is_terminal=row["is_terminal"].strip().lower() == "true",
+                is_success=row["is_success"].strip().lower() == "true",
+            )
+            result.setdefault(row["workflow_id"], {})[disposition.code] = disposition
+    return result

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Iterable
 
@@ -10,6 +10,7 @@ _HEADER_SEPARATOR_RE = re.compile(r"[_\s]+")
 _PHONE_NON_DIGIT_RE = re.compile(r"\D+")
 _CURRENCY_PREFIX_RE = re.compile(r"^(?:₹|rs\.?|inr)\s*", re.IGNORECASE)
 _PHONE_RE = re.compile(r"[6789]\d{9}")
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def normalize_header(value: str) -> str:
@@ -60,3 +61,14 @@ def parse_enum(value: str, allowed_values: Iterable[str]) -> str:
     if normalized not in allowed:
         raise ValueError("invalid_enum")
     return normalized
+
+
+def parse_event_timestamp(value: str) -> datetime:
+    """Parse an event timestamp and return an aware UTC datetime."""
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=IST)
+    return parsed.astimezone(timezone.utc)
